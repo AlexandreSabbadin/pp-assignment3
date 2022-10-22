@@ -16,7 +16,7 @@ int main (int argc, char *argv[]) {
   char *prime=NULL;
   const char unmarked = (char)0;
   const char marked = (char)1;
-  clock_t start, stop;
+  double start, stop;
 
   if (argc < 3) {
     printf("Usage:  %s nthreads N\n", argv[0]);
@@ -28,6 +28,8 @@ int main (int argc, char *argv[]) {
 
   /* To store the marks from 3 to N we need (N-3)/2+1 positions */
   N_pos = (N-3)/2+1;
+
+  start = omp_get_wtime();
 
   /* Allocate marks for all odd integers from 3 to N */
   prime = malloc(N_pos); 
@@ -44,32 +46,44 @@ int main (int argc, char *argv[]) {
   {
     tid = omp_get_thread_num();
     if (tid == 0) {
-      printf("Starting with %d threads\n",nthreads);
+      printf("\nStarting with %d threads and N=%d\n\n",nthreads,N);
     }
     
     for (i=0; NR(i) <= (int)sqrt((double)N); i++) {
       if (prime[i]==unmarked) {   /* Next unmarked position */
         t = NR(i);  /* Position i corresponds to the value t */
-        //printf("[%d] %d\n", tid, t);
+        if (DEBUG && tid==0) printf("Marking multiples of %d: ", t);
         offset = POS(t*t);
         k=K(offset,tid,nthreads,N_pos);
         while (NR(k)%t > 0) {
           k++;
         }
-        for (k; k<K(offset,tid+1,nthreads,N_pos); k+=t) {
-          //printf("\t[%d] %d %d\n", tid, k, NR(k));
+        for (k; k<K(offset,(tid+1),nthreads,N_pos); k+=t) {
+          if (DEBUG && tid==0) printf("%d ", NR(k));
           prime[k] = marked;  /* Mark the multiples of i */
         }
+        if (DEBUG && tid==0) printf("\n");
       }
+#pragma omp barrier
     }
-
-
   }
-  printf("2 ");
+  if (DEBUG) printf("\nPrime numbers smaller than or equal to %d are:\n2 ", N);
+  nr_primes = 1;
   int j;
   for (j=0; j<N_pos; j++) {
-    if (prime[j] == unmarked) printf("%d ", NR(j));
+    if (prime[j] == unmarked) {
+      lastprime = NR(j);
+      nr_primes++;
+      if (DEBUG) printf("%d ", NR(j));
+    }
   }
-  printf("\n");
 
+  stop = omp_get_wtime();
+  printf("\nTime: %6f s\n", stop-start);
+
+  printf("\n%d primes smaller than or equal to %d\n", nr_primes, N);
+  printf("The largest of these primes is %d\n", lastprime);
+  printf("\nReady\n");
+
+  exit(0);
 }

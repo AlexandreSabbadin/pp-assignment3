@@ -63,7 +63,7 @@ int main (int argc, char *argv[]) {
   }
   
   stop = clock();
-  printf("Time: %6.1f s\n", (float)(stop-start)/CLOCKS_PER_SEC);
+  printf("Time: %6f s\n", (float)(stop-start)/CLOCKS_PER_SEC);
 
   if (DEBUG) {
     printf("\nPrime numbers smaller than or equal to %d are\n", N);
